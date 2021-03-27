@@ -6,6 +6,8 @@ import javax.inject.Singleton;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Singleton
 public class PostMemoryRepo implements PostRepository {
@@ -15,7 +17,7 @@ public class PostMemoryRepo implements PostRepository {
     private long FIRST_NUM_FOR_ID = 1L;
 
     public PostMemoryRepo() {
-        this.posts = List.of(
+        this.posts = Stream.of(
                 Post.builder()
                         .id(incrementAndGetId())
                         .title("First post")
@@ -37,7 +39,7 @@ public class PostMemoryRepo implements PostRepository {
                         .author("Kobayashi")
                         .dateTime(LocalDateTime.of(2020, 12, 12, 12, 12))
                         .build()
-        );
+        ).collect(Collectors.toList());
     }
 
     @Override
@@ -50,6 +52,26 @@ public class PostMemoryRepo implements PostRepository {
         return posts.stream()
                 .filter(post -> post.getId() == id)
                 .findFirst();
+    }
+
+    @Override
+    public Optional<Post> updatePost(Post post) {
+        var postFound = findById(post.getId());
+        if (postFound.isPresent()) {
+            var oldPost = postFound.get();
+            oldPost.setTitle(post.getTitle());
+            oldPost.setText(post.getText());
+        }
+        return postFound;
+    }
+
+    @Override
+    public boolean deletePostById(long id) {
+        var postFound = findById(id);
+        if (postFound.isPresent()) {
+            this.posts.remove(postFound.get());
+            return true;
+        } else return false;
     }
 
     private long incrementAndGetId() {

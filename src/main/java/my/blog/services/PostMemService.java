@@ -22,4 +22,14 @@ public class PostMemService implements PostService {
     public Optional<Post> getById(long id) {
         return memoryRepo.findById(id);
     }
+
+    @Override
+    public Optional<Post> updatePost(Post post) {
+        return memoryRepo.updatePost(post);
+    }
+
+    @Override
+    public boolean deletePostById(long id) {
+        return memoryRepo.deletePostById(id);
+    }
 }

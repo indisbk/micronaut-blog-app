@@ -10,4 +10,8 @@ public interface PostService {
     List<Post> getAllPosts();
 
     Optional<Post> getById(long id);
+
+    Optional<Post> updatePost(Post post);
+
+    boolean deletePostById(long id);
 }

@@ -10,8 +10,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import javax.inject.Inject;
 import java.time.LocalDateTime;
@@ -23,9 +22,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class PostControllerTest {
 
     private static Map<String, Post> testData;
+
+    private final long UNSUPPORTED_ID = 4L;
 
     @Inject
     @Client("/")
@@ -59,9 +61,9 @@ class PostControllerTest {
     }
 
     @Test
+    @Order(1)
     void returnsListOfPosts() {
-        var request = HttpRequest.GET("/posts");
-        HttpResponse<List<Post>> response = client.toBlocking().exchange(request, Argument.listOf(Post.class));
+        HttpResponse<List<Post>> response = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
 
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
@@ -71,6 +73,7 @@ class PostControllerTest {
     }
 
     @Test
+    @Order(2)
     void findPostById() {
         HttpResponse<Post> response = client.toBlocking()
                 .exchange(HttpRequest.GET("/posts/1"), Post.class);
@@ -82,10 +85,10 @@ class PostControllerTest {
     }
 
     @Test
+    @Order(3)
     void notFoundPostById() {
-        var id = "4";
         try {
-            client.toBlocking().exchange(HttpRequest.GET("/posts/" + id),
+            client.toBlocking().exchange(HttpRequest.GET("/posts/" + UNSUPPORTED_ID),
                     Argument.of(Post.class),
                     Argument.of(CustomHttpResponseError.class));
         } catch (HttpClientResponseException ex) {
@@ -93,7 +96,71 @@ class PostControllerTest {
             assertTrue(error.isPresent());
             assertEquals(HttpStatus.NOT_FOUND.getCode(), error.get().getStatus());
             assertEquals(HttpStatus.NOT_FOUND.name(), error.get().getError());
-            assertEquals("Not found post with id: " + id, error.get().getMessage());
+            assertEquals("Not found post with id: " + UNSUPPORTED_ID, error.get().getMessage());
+        }
+    }
+
+    @Test
+    @Order(4)
+    void canUpdatePost() {
+        var changedTitle = "New title";
+        var changedText = "New text";
+        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts",
+                Post.builder()
+                .id(1L)
+                .title(changedTitle)
+                .text(changedText)
+                .build()),
+                Post.class
+        );
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+
+        var updatedPost = response.body();
+        assertNotNull(updatedPost);
+        assertEquals(changedTitle, updatedPost.getTitle());
+        assertEquals(changedText, updatedPost.getText());
+    }
+
+    @Test
+    @Order(5)
+    void failureUpdatePost() {
+        try {
+            client.toBlocking().exchange(HttpRequest.PUT("/posts", Post.builder().id(UNSUPPORTED_ID).build()),
+                    Argument.of(Post.class),
+                    Argument.of(CustomHttpResponseError.class));
+        } catch (HttpClientResponseException ex) {
+            Optional<CustomHttpResponseError> error = ex.getResponse().getBody(CustomHttpResponseError.class);
+            assertTrue(error.isPresent());
+            assertEquals(HttpStatus.NOT_ACCEPTABLE.getCode(), error.get().getStatus());
+            assertEquals(HttpStatus.NOT_ACCEPTABLE.name(), error.get().getError());
+            assertEquals("Failure update post with id: " + UNSUPPORTED_ID, error.get().getMessage());
+        }
+    }
+
+    @Test
+    @Order(6)
+    void canRemovePostById() {
+        HttpResponse<Object> responseOfDel = client.toBlocking().exchange(HttpRequest.DELETE("/posts/1"));
+        assertEquals(HttpStatus.OK, responseOfDel.getStatus());
+
+        HttpResponse<List<Post>> responseOfGetAll = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
+        List<Post> posts = responseOfGetAll.body();
+        assertNotNull(posts);
+        assertEquals(2, posts.size());
+    }
+
+    @Test
+    @Order(7)
+    void failureRemovePost() {
+        try {
+            client.toBlocking().exchange(HttpRequest.DELETE("/posts/" + UNSUPPORTED_ID), String.class);
+        } catch (HttpClientResponseException ex) {
+            HttpResponse<?> response = ex.getResponse();
+            assertEquals(HttpStatus.NOT_ACCEPTABLE, response.getStatus());
+            Optional<String> message = response.getBody(String.class);
+            assertTrue(message.isPresent());
+            assertEquals("Failure update post with id: " + UNSUPPORTED_ID, message.get());
         }
     }
 

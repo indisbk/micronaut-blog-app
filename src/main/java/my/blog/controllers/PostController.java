@@ -2,9 +2,8 @@ package my.blog.controllers;
 
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
-import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.PathVariable;
+import io.micronaut.http.MediaType;
+import io.micronaut.http.annotation.*;
 import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
 import my.blog.services.PostService;
@@ -41,5 +40,25 @@ public class PostController {
                     .build());
         }
         return HttpResponse.ok(foundPost.get());
+    }
+
+    @Put(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public HttpResponse updatePost(@Body Post post) {
+        var updatedPost = service.updatePost(post);
+        if (updatedPost.isEmpty()) {
+            var errorMsg = "Failure update post with id: " + post.getId();
+            logger.error(errorMsg);
+            return HttpResponse.status(HttpStatus.NOT_ACCEPTABLE).body(CustomHttpResponseError.builder()
+                    .status(HttpStatus.NOT_ACCEPTABLE.getCode())
+                    .error(HttpStatus.NOT_ACCEPTABLE.name())
+                    .message(errorMsg)
+                    .build());
+        }
+        return HttpResponse.ok(updatedPost.get());
+    }
+
+    @Delete(value = "/{id}", consumes = MediaType.APPLICATION_JSON)
+    public HttpResponse<String> removePostById(@PathVariable long id) {
+        return service.deletePostById(id) ? HttpResponse.ok() : HttpResponse.status(HttpStatus.NOT_ACCEPTABLE).body("Failure update post with id: " + id);
     }
 }
