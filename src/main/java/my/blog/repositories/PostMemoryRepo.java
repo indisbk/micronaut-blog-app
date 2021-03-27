@@ -5,6 +5,7 @@ import my.blog.models.Post;
 import javax.inject.Singleton;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Singleton
 public class PostMemoryRepo implements PostRepository {
@@ -42,6 +43,13 @@ public class PostMemoryRepo implements PostRepository {
     @Override
     public List<Post> findAllPosts() {
         return this.posts;
+    }
+
+    @Override
+    public Optional<Post> findById(long id) {
+        return posts.stream()
+                .filter(post -> post.getId() == id)
+                .findFirst();
     }
 
     private long incrementAndGetId() {

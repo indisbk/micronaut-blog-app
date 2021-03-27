@@ -6,6 +6,7 @@ import my.blog.repositories.PostRepository;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Optional;
 
 @Singleton
 public class PostMemService implements PostService {
@@ -15,5 +16,10 @@ public class PostMemService implements PostService {
 
     public List<Post> getAllPosts() {
         return memoryRepo.findAllPosts();
+    }
+
+    @Override
+    public Optional<Post> getById(long id) {
+        return memoryRepo.findById(id);
     }
 }
