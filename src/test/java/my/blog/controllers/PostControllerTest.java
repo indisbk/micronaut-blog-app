@@ -8,6 +8,7 @@ import io.micronaut.http.client.RxStreamingHttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
+import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,10 +17,10 @@ import javax.inject.Inject;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
 class PostControllerTest {
@@ -71,8 +72,8 @@ class PostControllerTest {
 
     @Test
     void findPostById() {
-        var request = HttpRequest.GET("/posts/1");
-        HttpResponse<Post> response = client.toBlocking().exchange(request, Post.class);
+        HttpResponse<Post> response = client.toBlocking()
+                .exchange(HttpRequest.GET("/posts/1"), Post.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
@@ -83,11 +84,16 @@ class PostControllerTest {
     @Test
     void notFoundPostById() {
         var id = "4";
-        var request = HttpRequest.GET("/posts/" + id);
         try {
-            client.toBlocking().exchange(request, Post.class);
+            client.toBlocking().exchange(HttpRequest.GET("/posts/" + id),
+                    Argument.of(Post.class),
+                    Argument.of(CustomHttpResponseError.class));
         } catch (HttpClientResponseException ex) {
-            assertEquals(HttpStatus.NOT_FOUND, ex.getResponse().getStatus());
+            Optional<CustomHttpResponseError> error = ex.getResponse().getBody(CustomHttpResponseError.class);
+            assertTrue(error.isPresent());
+            assertEquals(HttpStatus.NOT_FOUND.getCode(), error.get().getStatus());
+            assertEquals(HttpStatus.NOT_FOUND.name(), error.get().getError());
+            assertEquals("Not found post with id: " + id, error.get().getMessage());
         }
     }
 

@@ -1,9 +1,11 @@
 package my.blog.controllers;
 
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
+import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
 import my.blog.services.PostService;
 import org.slf4j.Logger;
@@ -30,9 +32,13 @@ public class PostController {
     public HttpResponse getById(@PathVariable long id) {
         Optional<Post> foundPost = service.getById(id);
         if (foundPost.isEmpty()) {
-            String errorMsg = "Not found post with id: " + id;
+            var errorMsg = "Not found post with id: " + id;
             logger.error(errorMsg);
-            return HttpResponse.notFound(errorMsg);
+            return HttpResponse.notFound(CustomHttpResponseError.builder()
+                    .status(HttpStatus.NOT_FOUND.getCode())
+                    .error(HttpStatus.NOT_FOUND.name())
+                    .message(errorMsg)
+                    .build());
         }
         return HttpResponse.ok(foundPost.get());
     }
