@@ -61,7 +61,17 @@ public class PostController {
         return HttpResponse.ok(foundPost.get());
     }
 
-    @Put(consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    @Operation(summary = "Update post")
+    @ApiResponse(
+            content = @Content(mediaType = MediaType.APPLICATION_JSON)
+
+    )
+    @ApiResponse(
+            responseCode = "406",
+            description = "Failure update post with given id"
+    )
+    @Tag(name = "update_post")
+    @Put(value = "/update", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public HttpResponse updatePost(@Body Post post) {
         var updatedPost = service.updatePost(post);
         if (updatedPost.isEmpty()) {
@@ -76,8 +86,42 @@ public class PostController {
         return HttpResponse.ok(updatedPost.get());
     }
 
+    @Operation(summary = "Delete post by id")
+    @ApiResponse(
+            content = @Content(mediaType = MediaType.APPLICATION_JSON)
+
+    )
+    @ApiResponse(
+            responseCode = "406",
+            description = "Failure update post by id"
+    )
+    @Tag(name = "delete_post_by_id")
     @Delete(value = "/{id}", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse<String> removePostById(@PathVariable long id) {
         return service.deletePostById(id) ? HttpResponse.ok() : HttpResponse.status(HttpStatus.NOT_ACCEPTABLE).body("Failure update post with id: " + id);
+    }
+
+    @Operation(summary = "Creating a new post")
+    @ApiResponse(
+            content = @Content(mediaType = MediaType.APPLICATION_JSON)
+
+    )
+    @ApiResponse(
+            responseCode = "406",
+            description = "Identifier of new post must be 0 or null!"
+    )
+    @Tag(name = "create_post")
+    @Put(value = "create", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
+    public HttpResponse createNewPost(@Body Post post) {
+        if (post.getId() > 0) {
+            var errorMsg = "Identifier of new post must be 0 or null!";
+            logger.error(errorMsg);
+            return HttpResponse.status(HttpStatus.NOT_ACCEPTABLE).body(CustomHttpResponseError.builder()
+                    .status(HttpStatus.NOT_ACCEPTABLE.getCode())
+                    .error(HttpStatus.NOT_ACCEPTABLE.name())
+                    .message(errorMsg)
+                    .build());
+        }
+        return HttpResponse.ok(service.createPost(post));
     }
 }

@@ -14,4 +14,6 @@ public interface PostRepository {
     Optional<Post> updatePost(Post post);
 
     boolean deletePostById(long id);
+
+    Post createPost(Post post);
 }

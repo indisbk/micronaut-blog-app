@@ -105,7 +105,7 @@ class PostControllerTest {
     void canUpdatePost() {
         var changedTitle = "New title";
         var changedText = "New text";
-        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts",
+        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts/update",
                 Post.builder()
                 .id(1L)
                 .title(changedTitle)
@@ -126,7 +126,7 @@ class PostControllerTest {
     @Order(5)
     void failureUpdatePost() {
         try {
-            client.toBlocking().exchange(HttpRequest.PUT("/posts", Post.builder().id(UNSUPPORTED_ID).build()),
+            client.toBlocking().exchange(HttpRequest.PUT("/posts/update", Post.builder().id(UNSUPPORTED_ID).build()),
                     Argument.of(Post.class),
                     Argument.of(CustomHttpResponseError.class));
         } catch (HttpClientResponseException ex) {
@@ -161,6 +161,40 @@ class PostControllerTest {
             Optional<String> message = response.getBody(String.class);
             assertTrue(message.isPresent());
             assertEquals("Failure update post with id: " + UNSUPPORTED_ID, message.get());
+        }
+    }
+
+    @Test
+    @Order(8)
+    void canCreatePost() {
+        String createdTitle = "New title";
+        String createdText = "New text";
+        String postAuthor = "Brandon";
+        var newPost = Post.builder().title(createdTitle).text(createdText).author(postAuthor).build();
+        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts/create", newPost), Post.class);
+
+        assertEquals(HttpStatus.OK, response.getStatus());
+
+        var createdPost = response.body();
+        assertNotNull(createdPost);
+        assertEquals(createdTitle, createdPost.getTitle());
+        assertEquals(createdText, createdPost.getText());
+        assertEquals(postAuthor, createdPost.getAuthor());
+    }
+
+    @Test
+    @Order(9)
+    void failCreateIfPostHasId() {
+        try {
+            client.toBlocking().exchange(HttpRequest.PUT("/posts/create", Post.builder().id(UNSUPPORTED_ID).build()),
+                    Argument.of(Post.class),
+                    Argument.of(CustomHttpResponseError.class));
+        } catch (HttpClientResponseException ex) {
+            Optional<CustomHttpResponseError> error = ex.getResponse().getBody(CustomHttpResponseError.class);
+            assertTrue(error.isPresent());
+            assertEquals(HttpStatus.NOT_ACCEPTABLE.getCode(), error.get().getStatus());
+            assertEquals(HttpStatus.NOT_ACCEPTABLE.name(), error.get().getError());
+            assertEquals("Identifier of new post must be 0 or null!", error.get().getMessage());
         }
     }
 

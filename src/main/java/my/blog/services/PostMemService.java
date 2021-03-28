@@ -32,4 +32,9 @@ public class PostMemService implements PostService {
     public boolean deletePostById(long id) {
         return memoryRepo.deletePostById(id);
     }
+
+    @Override
+    public Post createPost(Post post) {
+        return memoryRepo.createPost(post);
+    }
 }

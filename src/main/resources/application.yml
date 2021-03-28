@@ -1,6 +1,7 @@
 micronaut:
   application:
     name: myBlog
+  #swagger config for documentation
   router:
     static-resources:
       swagger:
@@ -15,3 +16,10 @@ micronaut:
       swagger-ui:
         paths: classpath:META-INF/swagger/views/swagger-ui
         mapping: /swagger-ui/**
+#JSON
+jackson:
+  #property-naming-strategy: SNAKE_CASE
+  serialization:
+    writeDatesAsTimestamps: false
+    writeDatesWithZoneId: true
+    writeDateTimestampsAsNanoseconds: false

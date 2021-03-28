@@ -74,6 +74,14 @@ public class PostMemoryRepo implements PostRepository {
         } else return false;
     }
 
+    @Override
+    public Post createPost(Post post) {
+        post.setId(incrementAndGetId());
+        post.setDateTime(LocalDateTime.now());
+        this.posts.add(post);
+        return post;
+    }
+
     private long incrementAndGetId() {
         return FIRST_NUM_FOR_ID++;
     }
