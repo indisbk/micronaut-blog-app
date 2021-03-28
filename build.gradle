@@ -1,6 +1,7 @@
 plugins {
     id("com.github.johnrengelman.shadow") version "6.1.0"
     id("io.micronaut.application") version "1.4.2"
+    id("io.swagger.core.v3.swagger-gradle-plugin") version "2.1.7"
 }
 
 version = "0.1"
@@ -21,11 +22,14 @@ micronaut {
 
 dependencies {
 
-    compileOnly 'org.projectlombok:lombok:1.18.16'
-    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    compileOnly('org.projectlombok:lombok:1.18.16')
+    annotationProcessor('org.projectlombok:lombok:1.18.16')
 
-    testCompileOnly 'org.projectlombok:lombok:1.18.16'
-    testAnnotationProcessor 'org.projectlombok:lombok:1.18.16'
+    testCompileOnly('org.projectlombok:lombok:1.18.16')
+    testAnnotationProcessor('org.projectlombok:lombok:1.18.16')
+
+    annotationProcessor("io.micronaut.openapi:micronaut-openapi:2.3.1")
+    implementation("io.swagger.core.v3:swagger-annotations")
 
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-runtime")
@@ -40,8 +44,8 @@ application {
     mainClass.set("my.blog.Application")
 }
 java {
-    sourceCompatibility = JavaVersion.toVersion("11")
-    targetCompatibility = JavaVersion.toVersion("11")
+    sourceCompatibility = JavaVersion.toVersion("14")
+    targetCompatibility = JavaVersion.toVersion("14")
 }
 
 

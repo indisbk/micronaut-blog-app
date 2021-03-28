@@ -4,6 +4,10 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
 import my.blog.services.PostService;
@@ -22,11 +26,26 @@ public class PostController {
     @Inject
     private PostService service;
 
+    @Operation(summary = "Returns all public posts")
+    @ApiResponse(
+            content = @Content(mediaType = MediaType.APPLICATION_JSON)
+    )
+    @Tag(name = "posts")
     @Get
     public List<Post> getAllPosts() {
         return service.getAllPosts();
     }
 
+    @Operation(summary = "Return post by given identifier")
+    @ApiResponse(
+            content = @Content(mediaType = MediaType.APPLICATION_JSON)
+
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "Invalid given identifier"
+    )
+    @Tag(name = "post_by_id")
     @Get("/{id}")
     public HttpResponse getById(@PathVariable long id) {
         Optional<Post> foundPost = service.getById(id);
