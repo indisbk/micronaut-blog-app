@@ -1,12 +1,12 @@
 package my.blog.controllers;
 
 import io.micronaut.core.type.Argument;
-import io.micronaut.http.HttpRequest;
-import io.micronaut.http.HttpResponse;
-import io.micronaut.http.HttpStatus;
+import io.micronaut.http.*;
 import io.micronaut.http.client.RxStreamingHttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
+import io.micronaut.security.authentication.UsernamePasswordCredentials;
+import io.micronaut.security.token.jwt.render.BearerAccessRefreshToken;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
@@ -63,7 +63,7 @@ class PostControllerTest {
     @Test
     @Order(1)
     void returnsListOfPosts() {
-        HttpResponse<List<Post>> response = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
+        var response = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
 
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
@@ -75,8 +75,7 @@ class PostControllerTest {
     @Test
     @Order(2)
     void findPostById() {
-        HttpResponse<Post> response = client.toBlocking()
-                .exchange(HttpRequest.GET("/posts/1"), Post.class);
+        var response = client.toBlocking().exchange(HttpRequest.GET("/posts/1"), Post.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
@@ -103,16 +102,15 @@ class PostControllerTest {
     @Test
     @Order(4)
     void canUpdatePost() {
+        var token = givenTestUserIsLoggedIn();
+
         var changedTitle = "New title";
         var changedText = "New text";
-        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts/update",
-                Post.builder()
-                .id(1L)
-                .title(changedTitle)
-                .text(changedText)
-                .build()),
-                Post.class
-        );
+
+        var updateRqst = HttpRequest.PUT("/posts/update", Post.builder().id(1L).title(changedTitle).text(changedText).build())
+                .accept(MediaType.APPLICATION_JSON)
+                .bearerAuth(token.getAccessToken());
+        HttpResponse<Post> response = client.toBlocking().exchange(updateRqst, Post.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
 
@@ -125,10 +123,12 @@ class PostControllerTest {
     @Test
     @Order(5)
     void failureUpdatePost() {
+        var token = givenTestUserIsLoggedIn();
         try {
-            client.toBlocking().exchange(HttpRequest.PUT("/posts/update", Post.builder().id(UNSUPPORTED_ID).build()),
-                    Argument.of(Post.class),
-                    Argument.of(CustomHttpResponseError.class));
+            var rqst = HttpRequest.PUT("/posts/update", Post.builder().id(UNSUPPORTED_ID).build())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bearerAuth(token.getAccessToken());
+            client.toBlocking().exchange(rqst, Argument.of(Post.class), Argument.of(CustomHttpResponseError.class));
         } catch (HttpClientResponseException ex) {
             Optional<CustomHttpResponseError> error = ex.getResponse().getBody(CustomHttpResponseError.class);
             assertTrue(error.isPresent());
@@ -141,10 +141,14 @@ class PostControllerTest {
     @Test
     @Order(6)
     void canRemovePostById() {
-        HttpResponse<Object> responseOfDel = client.toBlocking().exchange(HttpRequest.DELETE("/posts/1"));
+        var token = givenTestUserIsLoggedIn();
+        var rqst = HttpRequest.DELETE("/posts/1")
+                .accept(MediaType.APPLICATION_JSON)
+                .bearerAuth(token.getAccessToken());
+        var responseOfDel = client.toBlocking().exchange(rqst);
         assertEquals(HttpStatus.OK, responseOfDel.getStatus());
 
-        HttpResponse<List<Post>> responseOfGetAll = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
+        var responseOfGetAll = client.toBlocking().exchange(HttpRequest.GET("/posts"), Argument.listOf(Post.class));
         List<Post> posts = responseOfGetAll.body();
         assertNotNull(posts);
         assertEquals(2, posts.size());
@@ -153,8 +157,12 @@ class PostControllerTest {
     @Test
     @Order(7)
     void failureRemovePost() {
+        var token = givenTestUserIsLoggedIn();
         try {
-            client.toBlocking().exchange(HttpRequest.DELETE("/posts/" + UNSUPPORTED_ID), String.class);
+            var rqst = HttpRequest.DELETE("/posts/" + UNSUPPORTED_ID)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bearerAuth(token.getAccessToken());
+            client.toBlocking().exchange(rqst, String.class);
         } catch (HttpClientResponseException ex) {
             HttpResponse<?> response = ex.getResponse();
             assertEquals(HttpStatus.NOT_ACCEPTABLE, response.getStatus());
@@ -167,11 +175,15 @@ class PostControllerTest {
     @Test
     @Order(8)
     void canCreatePost() {
+        var token = givenTestUserIsLoggedIn();
         String createdTitle = "New title";
         String createdText = "New text";
         String postAuthor = "Brandon";
         var newPost = Post.builder().title(createdTitle).text(createdText).author(postAuthor).build();
-        HttpResponse<Post> response = client.toBlocking().exchange(HttpRequest.PUT("/posts/create", newPost), Post.class);
+        var rqst = HttpRequest.PUT("/posts/create", newPost)
+                .accept(MediaType.APPLICATION_JSON)
+                .bearerAuth(token.getAccessToken());
+        var response = client.toBlocking().exchange(rqst, Post.class);
 
         assertEquals(HttpStatus.OK, response.getStatus());
 
@@ -185,10 +197,12 @@ class PostControllerTest {
     @Test
     @Order(9)
     void failCreateIfPostHasId() {
+        var token = givenTestUserIsLoggedIn();
         try {
-            client.toBlocking().exchange(HttpRequest.PUT("/posts/create", Post.builder().id(UNSUPPORTED_ID).build()),
-                    Argument.of(Post.class),
-                    Argument.of(CustomHttpResponseError.class));
+            var rqst = HttpRequest.PUT("/posts/create", Post.builder().id(UNSUPPORTED_ID).build())
+                    .accept(MediaType.APPLICATION_JSON)
+                    .bearerAuth(token.getAccessToken());
+            client.toBlocking().exchange(rqst, Argument.of(Post.class), Argument.of(CustomHttpResponseError.class));
         } catch (HttpClientResponseException ex) {
             Optional<CustomHttpResponseError> error = ex.getResponse().getBody(CustomHttpResponseError.class);
             assertTrue(error.isPresent());
@@ -198,4 +212,15 @@ class PostControllerTest {
         }
     }
 
+    private BearerAccessRefreshToken givenTestUserIsLoggedIn() {
+        var username = "blog@gmail.net";
+        UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(username, "123456");
+        var request = HttpRequest.POST("/login", credentials);
+        var loginRsp = client.toBlocking().exchange(request, BearerAccessRefreshToken.class);
+        assertEquals(HttpStatus.OK, loginRsp.getStatus());
+        BearerAccessRefreshToken token = loginRsp.body();
+        assertNotNull(token);
+        assertEquals(username, token.getUsername());
+        return token;
+    }
 }

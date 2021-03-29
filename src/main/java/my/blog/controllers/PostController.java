@@ -4,6 +4,8 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -18,6 +20,7 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 
+@Secured(SecurityRule.IS_ANONYMOUS)
 @Controller("/posts")
 public class PostController {
 
@@ -71,6 +74,7 @@ public class PostController {
             description = "Failure update post with given id"
     )
     @Tag(name = "update_post")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
     @Put(value = "/update", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public HttpResponse updatePost(@Body Post post) {
         var updatedPost = service.updatePost(post);
@@ -96,6 +100,7 @@ public class PostController {
             description = "Failure update post by id"
     )
     @Tag(name = "delete_post_by_id")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
     @Delete(value = "/{id}", consumes = MediaType.APPLICATION_JSON)
     public HttpResponse<String> removePostById(@PathVariable long id) {
         return service.deletePostById(id) ? HttpResponse.ok() : HttpResponse.status(HttpStatus.NOT_ACCEPTABLE).body("Failure update post with id: " + id);
@@ -111,6 +116,7 @@ public class PostController {
             description = "Identifier of new post must be 0 or null!"
     )
     @Tag(name = "create_post")
+    @Secured(SecurityRule.IS_AUTHENTICATED)
     @Put(value = "create", consumes = MediaType.APPLICATION_JSON, produces = MediaType.APPLICATION_JSON)
     public HttpResponse createNewPost(@Body Post post) {
         if (post.getId() > 0) {
