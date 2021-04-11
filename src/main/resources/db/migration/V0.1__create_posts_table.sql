@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS wb_posts (
+    id SERIAL NOT NULL PRIMARY KEY,
+    guid VARCHAR UNIQUE NOT NULL ,
+    title VARCHAR,
+    text VARCHAR,
+    author VARCHAR,
+    createDate TIMESTAMPTZ NOT NULL
+);

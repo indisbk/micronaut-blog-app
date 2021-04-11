@@ -1,7 +1,11 @@
 package my.blog.controllers;
 
+import io.micronaut.context.annotation.Property;
 import io.micronaut.core.type.Argument;
-import io.micronaut.http.*;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.MediaType;
 import io.micronaut.http.client.RxStreamingHttpClient;
 import io.micronaut.http.client.annotation.Client;
 import io.micronaut.http.client.exceptions.HttpClientResponseException;
@@ -10,12 +14,14 @@ import io.micronaut.security.token.jwt.render.BearerAccessRefreshToken;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import my.blog.errors.CustomHttpResponseError;
 import my.blog.models.Post;
-import org.junit.jupiter.api.*;
+import my.blog.repositories.MemoryStorage;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import javax.inject.Inject;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,9 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @MicronautTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class PostControllerTest {
-
-    private static Map<String, Post> testData;
+class PostControllerMemoryTest {
 
     private final long UNSUPPORTED_ID = 4L;
 
@@ -33,32 +37,8 @@ class PostControllerTest {
     @Client("/")
     RxStreamingHttpClient client;
 
-    @BeforeAll
-    static void prepareTestData() {
-        testData = Map.of(
-                "one",  Post.builder()
-                        .id(1L)
-                        .title("First post")
-                        .text("Text of first post")
-                        .author("Victor")
-                        .dateTime(LocalDateTime.of(2020, 10, 10, 10, 10))
-                        .build(),
-                "two", Post.builder()
-                        .id(2L)
-                        .title("Second post")
-                        .text("Text of second post")
-                        .author("Gregory")
-                        .dateTime(LocalDateTime.of(2020, 11, 11, 11, 11))
-                        .build(),
-                "three", Post.builder()
-                        .id(3L)
-                        .title("Third post")
-                        .text("Text of third post")
-                        .author("Kobayashi")
-                        .dateTime(LocalDateTime.of(2020, 12, 12, 12, 12))
-                        .build()
-        );
-    }
+    @Inject
+    MemoryStorage memoryStorage;
 
     @Test
     @Order(1)
@@ -69,7 +49,7 @@ class PostControllerTest {
         assertNotNull(response.body());
 
         List<Post> posts = response.body();
-        assertThat(posts).containsExactly(testData.get("one"), testData.get("two"), testData.get("three"));
+        assertThat(posts).containsExactlyInAnyOrderElementsOf(memoryStorage.getPosts());
     }
 
     @Test
@@ -80,7 +60,7 @@ class PostControllerTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.body());
 
-        assertEquals(testData.get("one"), response.body());
+        assertEquals(memoryStorage.getPosts().get(0), response.body());
     }
 
     @Test
@@ -107,7 +87,9 @@ class PostControllerTest {
         var changedTitle = "New title";
         var changedText = "New text";
 
-        var updateRqst = HttpRequest.PUT("/posts/update", Post.builder().id(1L).title(changedTitle).text(changedText).build())
+        Post post1 = Post.builder().title(changedTitle).text(changedText).build();
+        post1.setId(1L);
+        var updateRqst = HttpRequest.PUT("/posts/update", post1)
                 .accept(MediaType.APPLICATION_JSON)
                 .bearerAuth(token.getAccessToken());
         HttpResponse<Post> response = client.toBlocking().exchange(updateRqst, Post.class);
@@ -125,7 +107,9 @@ class PostControllerTest {
     void failureUpdatePost() {
         var token = givenTestUserIsLoggedIn();
         try {
-            var rqst = HttpRequest.PUT("/posts/update", Post.builder().id(UNSUPPORTED_ID).build())
+            Post unknownPost = Post.builder().build();
+            unknownPost.setId(UNSUPPORTED_ID);
+            var rqst = HttpRequest.PUT("/posts/update", unknownPost)
                     .accept(MediaType.APPLICATION_JSON)
                     .bearerAuth(token.getAccessToken());
             client.toBlocking().exchange(rqst, Argument.of(Post.class), Argument.of(CustomHttpResponseError.class));
@@ -199,7 +183,9 @@ class PostControllerTest {
     void failCreateIfPostHasId() {
         var token = givenTestUserIsLoggedIn();
         try {
-            var rqst = HttpRequest.PUT("/posts/create", Post.builder().id(UNSUPPORTED_ID).build())
+            Post newFailedPost = Post.builder().build();
+            newFailedPost.setId(UNSUPPORTED_ID);
+            var rqst = HttpRequest.PUT("/posts/create", newFailedPost)
                     .accept(MediaType.APPLICATION_JSON)
                     .bearerAuth(token.getAccessToken());
             client.toBlocking().exchange(rqst, Argument.of(Post.class), Argument.of(CustomHttpResponseError.class));

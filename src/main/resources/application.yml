@@ -32,3 +32,15 @@ jackson:
     writeDatesAsTimestamps: false
     writeDatesWithZoneId: true
     writeDateTimestampsAsNanoseconds: false
+
+#flyway:
+  #datasources:
+    #default:
+      #enabled: true
+      #clean-schema: false
+      #url: ${PG_JDBC_URL:`jdbc:postgresql://localhost:5432/web_blog`}
+      #user: ${PG_USERNAME}
+      #password: ${PG_PASSWORD}
+      #schemas: mn
+      #default-schema: mn
+

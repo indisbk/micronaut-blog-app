@@ -22,24 +22,38 @@ micronaut {
 
 dependencies {
 
+    // lombok annotations
     compileOnly('org.projectlombok:lombok:1.18.16')
     annotationProcessor('org.projectlombok:lombok:1.18.16')
-
+    //-------
     testCompileOnly('org.projectlombok:lombok:1.18.16')
     testAnnotationProcessor('org.projectlombok:lombok:1.18.16')
 
+    // documentation by swagger and openapi
     annotationProcessor("io.micronaut.openapi:micronaut-openapi:2.3.1")
     implementation("io.swagger.core.v3:swagger-annotations")
 
+    // micronaut security
     annotationProcessor("io.micronaut.security:micronaut-security-annotations")
     implementation("io.micronaut.security:micronaut-security-jwt")
 
+    // basic dependencies
     implementation("io.micronaut:micronaut-http-client")
     implementation("io.micronaut:micronaut-runtime")
     implementation("javax.annotation:javax.annotation-api")
     implementation("io.micronaut:micronaut-validation")
+
+    // Schema migration
+    implementation("io.micronaut.flyway:micronaut-flyway")
+
+    // DB driver
+    implementation('org.postgresql:postgresql:42.1.4')
+
+    // logging
     runtimeOnly("ch.qos.logback:logback-classic")
-    testImplementation group: 'org.assertj', name: 'assertj-core', version: '3.6.1'
+
+    // testing
+    testImplementation('org.assertj:assertj-core:3.6.1')
 }
 
 
